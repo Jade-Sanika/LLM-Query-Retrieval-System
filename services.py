@@ -66,7 +66,7 @@ def chunk_text(text: str) -> list[str]:
     """Splits a long text into smaller, manageable chunks."""
     print("Chunking text...")
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1200,
+        chunk_size=1000,
         chunk_overlap=150,
         length_function=len
     )
@@ -128,7 +128,7 @@ def find_relevant_clauses(query: str, document_url: str) -> str:
     query_results = index.query(
         namespace=document_url,
         vector=query_embedding,
-        top_k=5,
+        top_k=3,
         include_metadata=True
     )
     
@@ -141,18 +141,23 @@ def get_answer_from_llm(context: str, question: str) -> str:
     print("Generating answer from Gemini...")
     model = genai.GenerativeModel(LLM_MODEL)
     
+    # --- NEW, MORE ROBUST PROMPT ---
     prompt = f"""
-    You are an expert Q&A assistant specializing in legal and insurance policy documents.
-    Your task is to provide a clear and concise answer to the user's question based *exclusively* on the provided context.
-    Do not use any external knowledge or make assumptions.
-    If the information to answer the question is not in the context, state that clearly.
+    You are a meticulous financial and legal document analyst. Your task is to answer the user's question with extreme precision, based ONLY on the provided context.
+
+    Follow these steps rigorously:
+    1.  First, carefully read the entire context to understand the information available.
+    2.  Identify the exact sentences, clauses, or data points within the context that directly answer the user's question.
+    3.  Synthesize these findings into a clear and concise answer. Do not add any information that is not explicitly stated in the context.
+    4.  If, after careful review, you cannot find the answer within the provided context, you MUST respond with the exact phrase: "This information is not available in the provided context." Do not guess or infer.
 
     CONTEXT:
+    ---
     {context}
-
-    QUESTION:
-    {question}
-
+    ---
+    
+    QUESTION: {question}
+    
     ANSWER:
     """
     
